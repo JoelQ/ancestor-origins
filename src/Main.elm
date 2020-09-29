@@ -1,11 +1,25 @@
 module Main exposing (main)
 
+import Browser
 import Html exposing (Html)
 
 
-main : Html a
+main : Program Flags Model Msg
 main =
-    view ancestors
+    Browser.element
+        { init = init
+        , update = update
+        , view = view
+        , subscriptions = subscriptions
+        }
+
+
+type alias Flags =
+    ()
+
+
+type alias Model =
+    Tree String
 
 
 type Tree a
@@ -30,6 +44,30 @@ ancestors =
         (Node "Mother" Empty Empty)
 
 
+
+-- UPDATE
+
+
+type Msg
+    = Noop
+
+
+init : Flags -> ( Model, Cmd Msg )
+init flags =
+    ( ancestors, Cmd.none )
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        Noop ->
+            ( model, Cmd.none )
+
+
+
+-- VIEW
+
+
 view : Tree String -> Html a
 view tree =
     foldTree individual unknown tree
@@ -49,3 +87,12 @@ unknown =
     Html.ul []
         [ Html.li [] [ Html.text "Unknown" ]
         ]
+
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none
