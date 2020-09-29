@@ -13,6 +13,16 @@ type Tree a
     | Empty
 
 
+foldTree : (a -> b -> b -> b) -> b -> Tree a -> b
+foldTree func initial tree =
+    case tree of
+        Node val left right ->
+            func val (foldTree func initial left) (foldTree func initial right)
+
+        Empty ->
+            initial
+
+
 ancestors : Tree String
 ancestors =
     Node "Self"
@@ -22,15 +32,20 @@ ancestors =
 
 view : Tree String -> Html a
 view tree =
-    case tree of
-        Node name father mother ->
-            Html.ul []
-                [ Html.li [] [ Html.text name ]
-                , view father
-                , view mother
-                ]
+    foldTree individual unknown tree
 
-        Empty ->
-            Html.ul []
-                [ Html.li [] [ Html.text "Unknown" ]
-                ]
+
+individual : String -> Html a -> Html a -> Html a
+individual name fatherHtml motherHtml =
+    Html.ul []
+        [ Html.li [] [ Html.text name ]
+        , fatherHtml
+        , motherHtml
+        ]
+
+
+unknown : Html a
+unknown =
+    Html.ul []
+        [ Html.li [] [ Html.text "Unknown" ]
+        ]
