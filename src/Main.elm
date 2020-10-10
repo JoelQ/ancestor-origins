@@ -1,10 +1,17 @@
 module Main exposing (main)
 
 import Browser
+import Color exposing (Color)
 import Dict exposing (Dict)
 import Html exposing (Html)
+import Html.Attributes
 import Html.Events
+import Path
 import Random exposing (Generator)
+import Scale.Color
+import Shape
+import Svg exposing (Svg)
+import Svg.Attributes
 
 
 main : Program Flags Model Msg
@@ -31,9 +38,12 @@ type alias Person =
     }
 
 
-nationalities : List String
+nationalities : Dict String Color
 nationalities =
-    [ "Français", "Anglais", "Écossais", "Allemand" ]
+    Dict.fromList <|
+        List.map2 Tuple.pair
+            [ "Français", "Anglais", "Écossais", "Allemand" ]
+            Scale.Color.category10
 
 
 type Tree a
@@ -78,7 +88,8 @@ nameGen =
 
 nationalityGen : Generator (Dict String Int)
 nationalityGen =
-    takeRandom nationalities
+    Dict.keys nationalities
+        |> takeRandom
         |> Random.andThen (combineMap natPair)
         |> Random.map Dict.fromList
 
@@ -149,7 +160,7 @@ view tree =
 
 individual : Person -> Html a -> Html a -> Html a
 individual person fatherHtml motherHtml =
-    Html.ul []
+    Html.ul [ Html.Attributes.style "width" "100px" ]
         [ Html.li [] [ Html.text person.name ]
         , nationality person.nationality
         , fatherHtml
@@ -157,33 +168,52 @@ individual person fatherHtml motherHtml =
         ]
 
 
-asPercentageOf : Int -> Int -> Int
-asPercentageOf total val =
-    round ((toFloat val / toFloat total) * 100)
-
-
-percent : Int -> String
-percent n =
-    String.fromInt n ++ "%"
-
-
 nationality : Dict String Int -> Html a
 nationality stats =
     let
-        total =
-            stats |> Dict.values |> List.sum
+        floats =
+            List.map toFloat (Dict.values stats)
+
+        arcs =
+            Shape.pie Shape.defaultPieConfig floats
+
+        radius =
+            Shape.defaultPieConfig.outerRadius
+
+        width =
+            radius * 2
+
+        height =
+            radius * 2
+
+        translation =
+            "translate("
+                ++ String.fromFloat radius
+                ++ ","
+                ++ String.fromFloat radius
+                ++ ")"
+
+        viewBoxString =
+            "0 0 " ++ String.fromFloat width ++ " " ++ String.fromFloat height
     in
-    Html.text <|
-        "("
-            ++ (stats
-                    |> Dict.toList
-                    |> List.map
-                        (\( name, value ) ->
-                            name ++ " - " ++ (percent <| asPercentageOf total <| value)
-                        )
-                    |> String.join " | "
-               )
-            ++ ")"
+    Svg.svg [ Svg.Attributes.viewBox viewBoxString ]
+        [ Svg.g [ Svg.Attributes.transform translation ] <|
+            List.map2 nationalSlice
+                (Dict.keys stats)
+                arcs
+        ]
+
+
+nationalSlice : String -> Shape.Arc -> Svg a
+nationalSlice label arc =
+    let
+        color =
+            Dict.get label nationalities
+                |> Maybe.withDefault Color.black
+    in
+    Path.element (Shape.arc arc)
+        [ Svg.Attributes.fill <| Color.toCssString color
+        ]
 
 
 unknown : Html a
