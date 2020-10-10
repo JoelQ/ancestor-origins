@@ -63,9 +63,15 @@ foldTree func initial tree =
 
 ancestors : Tree Person
 ancestors =
-    Node (Person "Self" Dict.empty)
-        (Node (Person "Father" Dict.empty) Empty Empty)
-        (Node (Person "Mother" Dict.empty) Empty Empty)
+    Node (Person "Self" (Dict.fromList [ ( "Français", 1 ), ( "Anglais", 1 ) ]))
+        (Node (Person "Father" (Dict.fromList [ ( "Français", 1 ) ]))
+            (Node (Person "Grandfather" (Dict.fromList [ ( "Français", 1 ) ])) Empty Empty)
+            (Node (Person "Grandmother" (Dict.fromList [ ( "Français", 1 ) ]))
+                (Node (Person "Great-Grandfather" (Dict.fromList [ ( "Français", 1 ) ])) Empty Empty)
+                (Node (Person "Great-Grandmother" (Dict.fromList [ ( "Français", 1 ) ])) Empty Empty)
+            )
+        )
+        (Node (Person "Mother" (Dict.fromList [ ( "Anglais", 1 ) ])) Empty Empty)
 
 
 ancestorGen : Generator (Tree Person)
@@ -160,11 +166,14 @@ view tree =
 
 individual : Person -> Html a -> Html a -> Html a
 individual person fatherHtml motherHtml =
-    Html.ul [ Html.Attributes.style "width" "100px" ]
-        [ Html.li [] [ Html.text person.name ]
-        , nationality person.nationality
-        , fatherHtml
-        , motherHtml
+    Html.ul []
+        [ Html.div [ Html.Attributes.class "parents" ]
+            [ fatherHtml
+            , motherHtml
+            ]
+        , Html.li []
+            [ nationality person.nationality
+            ]
         ]
 
 
@@ -219,7 +228,9 @@ nationalSlice label arc =
 unknown : Html a
 unknown =
     Html.ul []
-        [ Html.li [] [ Html.text "Unknown" ]
+        [ Html.li []
+            [ nationality <| Dict.fromList [ ( "unkown", 1 ) ]
+            ]
         ]
 
 
