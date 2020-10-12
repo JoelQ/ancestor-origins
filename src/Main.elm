@@ -24,85 +24,93 @@ type alias Flags =
 
 
 type alias Model =
-    Tree Person
+    FamilyTree
 
 
-type alias Person =
-    { name : String
-    , nationality : Nationality.Distribution
-    }
+type FamilyTree
+    = Node
+        { nationality : Nationality.Distribution
+        , father : FamilyTree
+        , mother : FamilyTree
+        }
+    | Unknown Nationality.Distribution
 
 
-unknownNationality : Nationality.Distribution
-unknownNationality =
-    Dict.fromList [ ( "Unknown", 1 ) ]
-
-
-type Tree a
-    = Node a (Tree a) (Tree a)
-    | Empty
-
-
-foldTree : (a -> b -> b -> b) -> b -> Tree a -> b
-foldTree func initial tree =
+foldTree : (Nationality.Distribution -> b -> b -> b) -> (Nationality.Distribution -> b) -> FamilyTree -> b
+foldTree nodeFunc emptyFunc tree =
     case tree of
-        Node val left right ->
-            func val (foldTree func initial left) (foldTree func initial right)
+        Node { nationality, father, mother } ->
+            nodeFunc nationality
+                (foldTree nodeFunc emptyFunc father)
+                (foldTree nodeFunc emptyFunc mother)
 
-        Empty ->
-            initial
+        Unknown nationality ->
+            emptyFunc nationality
 
 
-ancestors : Tree Person
+francais : Nationality.Distribution
+francais =
+    Dict.fromList [ ( "Français", 1 ) ]
+
+
+anglais : Nationality.Distribution
+anglais =
+    Dict.fromList [ ( "Anglais", 1 ) ]
+
+
+fiftyFifty : Nationality.Distribution
+fiftyFifty =
+    Dict.fromList [ ( "Français", 1 ), ( "Anglais", 1 ) ]
+
+
+ancestors : FamilyTree
 ancestors =
-    Node (Person "Self" (Dict.fromList [ ( "Français", 1 ), ( "Anglais", 1 ) ]))
-        (Node (Person "Father" (Dict.fromList [ ( "Français", 1 ) ]))
-            (Node (Person "Grandfather" (Dict.fromList [ ( "Français", 1 ) ])) Empty Empty)
-            (Node (Person "Grandmother" (Dict.fromList [ ( "Français", 1 ) ]))
-                (Node (Person "Great-Grandfather" (Dict.fromList [ ( "Français", 1 ) ])) Empty Empty)
-                (Node (Person "Great-Grandmother" (Dict.fromList [ ( "Français", 1 ) ])) Empty Empty)
-            )
-        )
-        (Node (Person "Mother" (Dict.fromList [ ( "Anglais", 1 ) ])) Empty Empty)
-
-
-ancestorGen : Generator (Tree Person)
-ancestorGen =
-    treeGen personGen
-
-
-personGen : Generator Person
-personGen =
-    Random.map2 Person
-        nameGen
-        Nationality.distributionGenerator
-
-
-nameGen : Generator String
-nameGen =
-    Random.int 1 10000
-        |> Random.map (\id -> "Ancestor id-" ++ String.fromInt id)
+    Node
+        { nationality = fiftyFifty
+        , father =
+            Node
+                { nationality = francais
+                , father =
+                    Node
+                        { nationality = francais
+                        , father = Unknown francais
+                        , mother = Unknown francais
+                        }
+                , mother =
+                    Node
+                        { nationality = francais
+                        , father = Unknown francais
+                        , mother = Unknown francais
+                        }
+                }
+        , mother =
+            Node
+                { nationality = anglais
+                , father = Unknown anglais
+                , mother = Unknown anglais
+                }
+        }
 
 
 {-| Generate a tree with 50% chance of getting a leaf node on every roll
 -}
-treeGen : Generator a -> Generator (Tree a)
-treeGen labelGen =
-    Random.weighted ( 50, nodeGen labelGen ) [ ( 50, emptyNodeGen ) ]
+familyTreeGen : Generator FamilyTree
+familyTreeGen =
+    Random.weighted ( 50, nodeGen ) [ ( 50, emptyNodeGen ) ]
         |> Random.andThen identity
 
 
-nodeGen : Generator a -> Generator (Tree a)
-nodeGen labelGen =
-    Random.map3 Node
-        labelGen
-        (Random.lazy (\_ -> treeGen labelGen))
-        (Random.lazy (\_ -> treeGen labelGen))
+nodeGen : Generator FamilyTree
+nodeGen =
+    Random.map3 (\nat father mother -> Node { nationality = nat, father = father, mother = mother })
+        Nationality.distributionGenerator
+        (Random.lazy (\_ -> familyTreeGen))
+        (Random.lazy (\_ -> familyTreeGen))
 
 
-emptyNodeGen : Generator (Tree a)
+emptyNodeGen : Generator FamilyTree
 emptyNodeGen =
-    Random.constant Empty
+    Random.map Unknown Nationality.distributionGenerator
 
 
 
@@ -111,7 +119,7 @@ emptyNodeGen =
 
 type Msg
     = GenerateTreeClicked
-    | ReceiveNewTree (Tree Person)
+    | ReceiveNewTree FamilyTree
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -123,7 +131,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GenerateTreeClicked ->
-            ( model, Random.generate ReceiveNewTree ancestorGen )
+            ( model, Random.generate ReceiveNewTree familyTreeGen )
 
         ReceiveNewTree tree ->
             ( tree, Cmd.none )
@@ -143,24 +151,24 @@ view tree =
         ]
 
 
-individual : Person -> Html a -> Html a -> Html a
-individual person fatherHtml motherHtml =
+individual : Nationality.Distribution -> Html a -> Html a -> Html a
+individual nationality fatherHtml motherHtml =
     Html.ul []
         [ Html.div [ Html.Attributes.class "parents" ]
             [ fatherHtml
             , motherHtml
             ]
         , Html.li []
-            [ Nationality.asPieChart person.nationality
+            [ Nationality.asPieChart nationality
             ]
         ]
 
 
-unknown : Html a
-unknown =
+unknown : Nationality.Distribution -> Html a
+unknown nationality =
     Html.ul []
         [ Html.li []
-            [ Nationality.asPieChart unknownNationality
+            [ Nationality.asPieChart nationality
             ]
         ]
 
