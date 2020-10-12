@@ -1,4 +1,9 @@
-module Nationality exposing (Distribution, asPieChart, distributionGenerator)
+module Nationality exposing
+    ( Distribution
+    , asMutedPieChart
+    , asPieChart
+    , distributionGenerator
+    )
 
 import Color exposing (Color)
 import Dict exposing (Dict)
@@ -37,7 +42,17 @@ colorMap =
 
 
 asPieChart : Distribution -> Html a
-asPieChart stats =
+asPieChart =
+    pieChartHelp nationalSlice
+
+
+asMutedPieChart : Distribution -> Html a
+asMutedPieChart =
+    pieChartHelp nationalSliceMuted
+
+
+pieChartHelp : (String -> Shape.Arc -> Svg a) -> Distribution -> Html a
+pieChartHelp viewSlice stats =
     let
         floats =
             List.map toFloat (Dict.values stats)
@@ -66,7 +81,7 @@ asPieChart stats =
     in
     Svg.svg [ Svg.Attributes.viewBox viewBoxString ]
         [ Svg.g [ Svg.Attributes.transform translation ] <|
-            List.map2 nationalSlice
+            List.map2 viewSlice
                 (Dict.keys stats)
                 arcs
         ]
@@ -81,7 +96,33 @@ nationalSlice label arc =
     in
     Path.element (Shape.arc arc)
         [ Svg.Attributes.fill <| Color.toCssString color
+        , Svg.Attributes.stroke <| Color.toCssString color
         ]
+
+
+nationalSliceMuted : String -> Shape.Arc -> Svg a
+nationalSliceMuted label arc =
+    let
+        color =
+            Dict.get label colorMap
+                |> Maybe.withDefault Color.black
+                |> muted
+    in
+    Path.element (Shape.arc arc)
+        [ Svg.Attributes.fill <| Color.toCssString color
+        , Svg.Attributes.stroke <| Color.toCssString color
+        , Svg.Attributes.strokeDasharray "10,10"
+        , Svg.Attributes.strokeWidth "5"
+        ]
+
+
+muted : Color -> Color
+muted color =
+    let
+        components =
+            Color.toRgba color
+    in
+    Color.fromRgba { components | alpha = 0.5 }
 
 
 

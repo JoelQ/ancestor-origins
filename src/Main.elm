@@ -127,7 +127,7 @@ unknown : Nationality.Distribution -> Html a
 unknown nationality =
     Html.ul []
         [ Html.li []
-            [ Nationality.asPieChart nationality
+            [ Nationality.asMutedPieChart nationality
             ]
         ]
 
