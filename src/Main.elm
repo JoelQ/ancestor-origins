@@ -2,11 +2,12 @@ module Main exposing (main)
 
 import Browser
 import Dict exposing (Dict)
+import FamilyTree exposing (FamilyTree(..))
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
 import Nationality
-import Random exposing (Generator)
+import Random
 
 
 main : Program Flags Model Msg
@@ -25,27 +26,6 @@ type alias Flags =
 
 type alias Model =
     FamilyTree
-
-
-type FamilyTree
-    = Node
-        { nationality : Nationality.Distribution
-        , father : FamilyTree
-        , mother : FamilyTree
-        }
-    | Unknown Nationality.Distribution
-
-
-foldTree : (Nationality.Distribution -> b -> b -> b) -> (Nationality.Distribution -> b) -> FamilyTree -> b
-foldTree nodeFunc emptyFunc tree =
-    case tree of
-        Node { nationality, father, mother } ->
-            nodeFunc nationality
-                (foldTree nodeFunc emptyFunc father)
-                (foldTree nodeFunc emptyFunc mother)
-
-        Unknown nationality ->
-            emptyFunc nationality
 
 
 francais : Nationality.Distribution
@@ -92,27 +72,6 @@ ancestors =
         }
 
 
-{-| Generate a tree with 50% chance of getting a leaf node on every roll
--}
-familyTreeGen : Generator FamilyTree
-familyTreeGen =
-    Random.weighted ( 50, nodeGen ) [ ( 50, emptyNodeGen ) ]
-        |> Random.andThen identity
-
-
-nodeGen : Generator FamilyTree
-nodeGen =
-    Random.map3 (\nat father mother -> Node { nationality = nat, father = father, mother = mother })
-        Nationality.distributionGenerator
-        (Random.lazy (\_ -> familyTreeGen))
-        (Random.lazy (\_ -> familyTreeGen))
-
-
-emptyNodeGen : Generator FamilyTree
-emptyNodeGen =
-    Random.map Unknown Nationality.distributionGenerator
-
-
 
 -- UPDATE
 
@@ -131,7 +90,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GenerateTreeClicked ->
-            ( model, Random.generate ReceiveNewTree familyTreeGen )
+            ( model, Random.generate ReceiveNewTree FamilyTree.generator )
 
         ReceiveNewTree tree ->
             ( tree, Cmd.none )
@@ -147,7 +106,7 @@ view tree =
         [ Html.h1 [] [ Html.text "Ancestor - Origins" ]
         , Html.button [ Html.Events.onClick GenerateTreeClicked ]
             [ Html.text "Generate Random Tree" ]
-        , foldTree individual unknown tree
+        , FamilyTree.fold individual unknown tree
         ]
 
 
