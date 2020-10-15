@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser
+import Color
 import Dict exposing (Dict)
 import FamilyTree exposing (FamilyTree(..))
 import Html exposing (Html)
@@ -110,10 +111,27 @@ view : Model -> Html Msg
 view tree =
     Html.main_ []
         [ Html.h1 [] [ Html.text "Ancestor - Origins" ]
+        , legend
         , Html.button [ Html.Events.onClick GenerateTreeClicked ]
             [ Html.text "Generate Random Tree" ]
         , FamilyTree.fold individual unknown <| FamilyTree.recalculateNationalities tree
         ]
+
+
+legend : Html a
+legend =
+    let
+        colors =
+            Nationality.colorMap |> Dict.toList
+    in
+    Html.div [ Html.Attributes.class "legend" ] <|
+        List.map
+            (\( nationality, color ) ->
+                Html.span
+                    [ Html.Attributes.style "color" <| Color.toCssString color ]
+                    [ Html.text nationality ]
+            )
+            colors
 
 
 individual : Nationality.Distribution -> Html a -> Html a -> Html a

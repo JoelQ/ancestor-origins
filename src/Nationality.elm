@@ -2,6 +2,7 @@ module Nationality exposing
     ( Distribution
     , asMutedPieChart
     , asPieChart
+    , colorMap
     , distributionGenerator
     , merge
     , singleNationalityGenerator
