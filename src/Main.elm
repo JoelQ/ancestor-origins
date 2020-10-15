@@ -38,38 +38,44 @@ anglais =
     Dict.fromList [ ( "Anglais", 1 ) ]
 
 
-fiftyFifty : Nationality.Distribution
-fiftyFifty =
-    Dict.fromList [ ( "Français", 1 ), ( "Anglais", 1 ) ]
+allemand : Nationality.Distribution
+allemand =
+    Dict.fromList [ ( "Allemand", 1 ) ]
+
+
+irlandais : Nationality.Distribution
+irlandais =
+    Dict.fromList [ ( "Irlandais", 1 ) ]
 
 
 ancestors : FamilyTree
 ancestors =
-    Node
-        { nationality = fiftyFifty
-        , father =
-            Node
-                { nationality = francais
-                , father =
-                    Node
-                        { nationality = francais
-                        , father = Unknown francais
-                        , mother = Unknown francais
-                        }
-                , mother =
-                    Node
-                        { nationality = francais
-                        , father = Unknown francais
-                        , mother = Unknown francais
-                        }
-                }
-        , mother =
-            Node
-                { nationality = anglais
-                , father = Unknown anglais
-                , mother = Unknown anglais
-                }
-        }
+    FamilyTree.recalculateNationalities <|
+        Node
+            { nationality = Dict.empty
+            , father =
+                Node
+                    { nationality = Dict.empty
+                    , father =
+                        Node
+                            { nationality = Dict.empty
+                            , father = Unknown francais
+                            , mother = Unknown allemand
+                            }
+                    , mother =
+                        Node
+                            { nationality = Dict.empty
+                            , father = Unknown irlandais
+                            , mother = Unknown francais
+                            }
+                    }
+            , mother =
+                Node
+                    { nationality = Dict.empty
+                    , father = Unknown anglais
+                    , mother = Unknown anglais
+                    }
+            }
 
 
 
@@ -106,7 +112,7 @@ view tree =
         [ Html.h1 [] [ Html.text "Ancestor - Origins" ]
         , Html.button [ Html.Events.onClick GenerateTreeClicked ]
             [ Html.text "Generate Random Tree" ]
-        , FamilyTree.fold individual unknown tree
+        , FamilyTree.fold individual unknown <| FamilyTree.recalculateNationalities tree
         ]
 
 

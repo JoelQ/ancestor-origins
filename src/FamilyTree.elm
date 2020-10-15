@@ -1,4 +1,9 @@
-module FamilyTree exposing (FamilyTree(..), fold, generator)
+module FamilyTree exposing
+    ( FamilyTree(..)
+    , fold
+    , generator
+    , recalculateNationalities
+    )
 
 import Nationality
 import Random exposing (Generator)
@@ -23,6 +28,30 @@ fold nodeFunc emptyFunc tree =
 
         Unknown nationality ->
             emptyFunc nationality
+
+
+getNationality : FamilyTree -> Nationality.Distribution
+getNationality tree =
+    case tree of
+        Node { nationality } ->
+            nationality
+
+        Unknown nationality ->
+            nationality
+
+
+recalculateNationalities : FamilyTree -> FamilyTree
+recalculateNationalities tree =
+    fold
+        (\nat father mother ->
+            Node
+                { nationality = Nationality.merge (getNationality father) (getNationality mother)
+                , father = father
+                , mother = mother
+                }
+        )
+        (\nat -> Unknown nat)
+        tree
 
 
 

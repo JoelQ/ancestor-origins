@@ -3,6 +3,7 @@ module Nationality exposing
     , asMutedPieChart
     , asPieChart
     , distributionGenerator
+    , merge
     )
 
 import Color exposing (Color)
@@ -17,7 +18,7 @@ import Svg.Attributes
 
 
 type alias Distribution =
-    Dict String Int
+    Dict String Float
 
 
 type alias ColorMap =
@@ -37,6 +38,50 @@ colorMap =
             Scale.Color.category10
 
 
+merge : Distribution -> Distribution -> Distribution
+merge d1 d2 =
+    let
+        ( scaled1, scaled2 ) =
+            scaleToLargest d1 d2
+    in
+    Dict.merge
+        (\k v dict -> Dict.insert k (Debug.log "left" v) dict)
+        (\key val1 val2 dict -> Dict.insert key (Debug.log "both" <| val1 + val2) dict)
+        (\k v dict -> Dict.insert k (Debug.log "right" v) dict)
+        scaled1
+        scaled2
+        Dict.empty
+
+
+scaleToLargest : Distribution -> Distribution -> ( Distribution, Distribution )
+scaleToLargest d1 d2 =
+    let
+        ( min, max ) =
+            minMax d1 d2
+
+        factor =
+            totalNatValue max / totalNatValue min
+
+        scaled =
+            Dict.map (\_ val -> val * factor) min
+    in
+    ( scaled, max )
+
+
+totalNatValue : Distribution -> Float
+totalNatValue d =
+    Dict.foldr (\_ v memo -> v + memo) 0 d
+
+
+minMax : Distribution -> Distribution -> ( Distribution, Distribution )
+minMax d1 d2 =
+    if totalNatValue d1 > totalNatValue d2 then
+        ( d2, d1 )
+
+    else
+        ( d1, d2 )
+
+
 
 -- SVG
 
@@ -54,11 +99,8 @@ asMutedPieChart =
 pieChartHelp : (String -> Shape.Arc -> Svg a) -> Distribution -> Html a
 pieChartHelp viewSlice stats =
     let
-        floats =
-            List.map toFloat (Dict.values stats)
-
         arcs =
-            Shape.pie Shape.defaultPieConfig floats
+            Shape.pie Shape.defaultPieConfig (Dict.values stats)
 
         radius =
             Shape.defaultPieConfig.outerRadius
@@ -129,7 +171,7 @@ muted color =
 -- RANDOM GENERATORS
 
 
-distributionGenerator : Generator (Dict String Int)
+distributionGenerator : Generator Distribution
 distributionGenerator =
     all
         |> takeRandom
@@ -137,9 +179,9 @@ distributionGenerator =
         |> Random.map Dict.fromList
 
 
-natPair : String -> Generator ( String, Int )
+natPair : String -> Generator ( String, Float )
 natPair name =
-    Random.pair (Random.constant name) (Random.int 1 10)
+    Random.pair (Random.constant name) (Random.float 1 10)
 
 
 
