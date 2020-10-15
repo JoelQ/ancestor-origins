@@ -59,20 +59,34 @@ recalculateNationalities tree =
 -- RANDOM GENERATORS
 
 
+maxDepth : Int
+maxDepth =
+    5
+
+
 {-| Generate a tree with 50% chance of getting a leaf node on every roll
 -}
 generator : Generator FamilyTree
 generator =
-    Random.weighted ( 50, nodeGen ) [ ( 50, unknownGen ) ]
-        |> Random.andThen identity
+    generateFromDepth 0
 
 
-nodeGen : Generator FamilyTree
-nodeGen =
+generateFromDepth : Int -> Generator FamilyTree
+generateFromDepth depth =
+    if depth > maxDepth then
+        unknownGen
+
+    else
+        Random.weighted ( 50, nodeGen depth ) [ ( 50, unknownGen ) ]
+            |> Random.andThen identity
+
+
+nodeGen : Int -> Generator FamilyTree
+nodeGen depth =
     Random.map3 (\nat father mother -> Node { nationality = nat, father = father, mother = mother })
         (Random.constant Dict.empty)
-        (Random.lazy (\_ -> generator))
-        (Random.lazy (\_ -> generator))
+        (Random.lazy (\_ -> generateFromDepth <| depth + 1))
+        (Random.lazy (\_ -> generateFromDepth <| depth + 1))
 
 
 unknownGen : Generator FamilyTree
