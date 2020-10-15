@@ -5,6 +5,7 @@ module FamilyTree exposing
     , recalculateNationalities
     )
 
+import Dict
 import Nationality
 import Random exposing (Generator)
 
@@ -69,11 +70,11 @@ generator =
 nodeGen : Generator FamilyTree
 nodeGen =
     Random.map3 (\nat father mother -> Node { nationality = nat, father = father, mother = mother })
-        Nationality.distributionGenerator
+        (Random.constant Dict.empty)
         (Random.lazy (\_ -> generator))
         (Random.lazy (\_ -> generator))
 
 
 unknownGen : Generator FamilyTree
 unknownGen =
-    Random.map Unknown Nationality.distributionGenerator
+    Random.map Unknown Nationality.singleNationalityGenerator

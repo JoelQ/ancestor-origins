@@ -4,6 +4,7 @@ module Nationality exposing
     , asPieChart
     , distributionGenerator
     , merge
+    , singleNationalityGenerator
     )
 
 import Color exposing (Color)
@@ -169,6 +170,12 @@ muted color =
 
 
 -- RANDOM GENERATORS
+
+
+singleNationalityGenerator : Generator Distribution
+singleNationalityGenerator =
+    Random.uniform "Unknown" all
+        |> Random.map (\nat -> Dict.fromList [ ( nat, 1 ) ])
 
 
 distributionGenerator : Generator Distribution
