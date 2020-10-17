@@ -114,7 +114,7 @@ view tree =
         , legend
         , Html.button [ Html.Events.onClick GenerateTreeClicked ]
             [ Html.text "Generate Random Tree" ]
-        , FamilyTree.fold individual unknown <| FamilyTree.recalculateNationalities tree
+        , FamilyTree.foldWithIndex individual unknown <| FamilyTree.recalculateNationalities tree
         ]
 
 
@@ -134,8 +134,8 @@ legend =
             colors
 
 
-individual : Nationality.Distribution -> Html a -> Html a -> Html a
-individual nationality fatherHtml motherHtml =
+individual : Int -> Nationality.Distribution -> Html a -> Html a -> Html a
+individual id nationality fatherHtml motherHtml =
     Html.ul []
         [ Html.div [ Html.Attributes.class "parents" ]
             [ fatherHtml
@@ -143,15 +143,17 @@ individual nationality fatherHtml motherHtml =
             ]
         , Html.li []
             [ Nationality.asPieChart nationality
+            , Html.text <| String.fromInt id
             ]
         ]
 
 
-unknown : Nationality.Distribution -> Html a
-unknown nationality =
+unknown : Int -> Nationality.Distribution -> Html a
+unknown id nationality =
     Html.ul []
         [ Html.li []
             [ Nationality.asMutedPieChart nationality
+            , Html.text <| String.fromInt id
             ]
         ]
 

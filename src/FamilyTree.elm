@@ -1,6 +1,7 @@
 module FamilyTree exposing
     ( FamilyTree(..)
     , fold
+    , foldWithIndex
     , generator
     , recalculateNationalities
     )
@@ -19,16 +20,44 @@ type FamilyTree
     | Unknown Nationality.Distribution
 
 
-fold : (Nationality.Distribution -> b -> b -> b) -> (Nationality.Distribution -> b) -> FamilyTree -> b
-fold nodeFunc emptyFunc tree =
+fold :
+    (Nationality.Distribution -> b -> b -> b)
+    -> (Nationality.Distribution -> b)
+    -> FamilyTree
+    -> b
+fold nodeFunc emptyFunc =
+    foldWithIndex (always nodeFunc) (always emptyFunc)
+
+
+foldWithIndex :
+    (Int -> Nationality.Distribution -> b -> b -> b)
+    -> (Int -> Nationality.Distribution -> b)
+    -> FamilyTree
+    -> b
+foldWithIndex nodeFunc emptyFunc =
+    Tuple.first << foldHelp 0 nodeFunc emptyFunc
+
+
+foldHelp :
+    Int
+    -> (Int -> Nationality.Distribution -> b -> b -> b)
+    -> (Int -> Nationality.Distribution -> b)
+    -> FamilyTree
+    -> ( b, Int )
+foldHelp index nodeFunc emptyFunc tree =
     case tree of
         Node { nationality, father, mother } ->
-            nodeFunc nationality
-                (fold nodeFunc emptyFunc father)
-                (fold nodeFunc emptyFunc mother)
+            let
+                ( fatherAcc, afterFatherIndex ) =
+                    foldHelp (index + 1) nodeFunc emptyFunc father
+
+                ( motherAcc, afterMotherIndex ) =
+                    foldHelp afterFatherIndex nodeFunc emptyFunc mother
+            in
+            ( nodeFunc index nationality fatherAcc motherAcc, afterMotherIndex )
 
         Unknown nationality ->
-            emptyFunc nationality
+            ( emptyFunc index nationality, index + 1 )
 
 
 getNationality : FamilyTree -> Nationality.Distribution
