@@ -1,5 +1,6 @@
 module FamilyTree exposing
     ( FamilyTree(..)
+    , find
     , fold
     , foldWithIndex
     , generator
@@ -7,6 +8,7 @@ module FamilyTree exposing
     )
 
 import Dict
+import Maybe.Extra
 import Nationality
 import Random exposing (Generator)
 
@@ -18,6 +20,25 @@ type FamilyTree
         , mother : FamilyTree
         }
     | Unknown Nationality.Distribution
+
+
+find : Int -> FamilyTree -> Maybe Nationality.Distribution
+find needle =
+    foldWithIndex
+        (\idx nat fatherSearch motherSearch ->
+            if idx == needle then
+                Just nat
+
+            else
+                Maybe.Extra.or fatherSearch motherSearch
+        )
+        (\idx nat ->
+            if idx == needle then
+                Just nat
+
+            else
+                Nothing
+        )
 
 
 fold :
