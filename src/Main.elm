@@ -116,12 +116,22 @@ update msg model =
 view : Model -> Html Msg
 view model =
     Html.main_ []
-        [ Html.h1 [] [ Html.text "Ancestor - Origins" ]
+        [ header
         , legend
-        , Html.button [ Html.Events.onClick GenerateTreeClicked ]
-            [ Html.text "Generate Random Tree" ]
-        , FamilyTree.foldWithIndex individual unknown <| FamilyTree.recalculateNationalities model.tree
+        , controls
+        , treeView <| FamilyTree.recalculateNationalities model.tree
         ]
+
+
+header : Html a
+header =
+    Html.h1 [] [ Html.text "Ancestor - Origins" ]
+
+
+controls : Html Msg
+controls =
+    Html.button [ Html.Events.onClick GenerateTreeClicked ]
+        [ Html.text "Generate Random Tree" ]
 
 
 legend : Html a
@@ -138,6 +148,11 @@ legend =
                     [ Html.text nationality ]
             )
             colors
+
+
+treeView : FamilyTree -> Html Msg
+treeView =
+    FamilyTree.foldWithIndex individual unknown
 
 
 individual : Int -> Nationality.Distribution -> Html Msg -> Html Msg -> Html Msg
