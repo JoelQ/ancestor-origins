@@ -52,9 +52,9 @@ merge d1 d2 =
             scaleToLargest d1 d2
     in
     Dict.merge
-        (\k v dict -> Dict.insert k (Debug.log "left" v) dict)
-        (\key val1 val2 dict -> Dict.insert key (Debug.log "both" <| val1 + val2) dict)
-        (\k v dict -> Dict.insert k (Debug.log "right" v) dict)
+        Dict.insert
+        (\key val1 val2 dict -> Dict.insert key (val1 + val2) dict)
+        Dict.insert
         scaled1
         scaled2
         Dict.empty
