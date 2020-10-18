@@ -1,7 +1,7 @@
 module Main exposing (main)
 
 import Browser
-import Color
+import Color exposing (Color)
 import Dict exposing (Dict)
 import FamilyTree exposing (FamilyTree(..))
 import Html exposing (Html)
@@ -90,6 +90,7 @@ type Msg
     | ReceiveNewTree FamilyTree
     | NodeSelected Int
     | ModalCloseClicked
+    | NationalityChosen String
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -110,6 +111,9 @@ update msg model =
             ( { model | selected = FamilyTree.find idx model.tree }, Cmd.none )
 
         ModalCloseClicked ->
+            ( { model | selected = Nothing }, Cmd.none )
+
+        NationalityChosen newNat ->
             ( { model | selected = Nothing }, Cmd.none )
 
 
@@ -195,8 +199,31 @@ modal selection =
                 [ Html.h1 [] [ Html.text "Set Nationality" ]
                 , Html.button [ Html.Attributes.class "close", Html.Events.onClick ModalCloseClicked ] [ Html.text "x" ]
                 , Html.div [ Html.Attributes.class "modal-content" ]
-                    []
+                    [ nationalityForm ]
                 ]
+
+
+nationalityForm : Html Msg
+nationalityForm =
+    let
+        colors =
+            Nationality.colorMap |> Dict.toList
+    in
+    Html.div [ Html.Attributes.class "nationality-form" ] <|
+        List.map
+            (\( nationality, color ) ->
+                chooseNationalityButton NationalityChosen nationality color
+            )
+            colors
+
+
+chooseNationalityButton : (String -> Msg) -> String -> Color -> Html Msg
+chooseNationalityButton natTagger nationality color =
+    Html.button
+        [ Html.Attributes.style "color" <| Color.toCssString color
+        , Html.Events.onClick (natTagger nationality)
+        ]
+        [ Html.text nationality ]
 
 
 

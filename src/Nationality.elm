@@ -29,7 +29,12 @@ type alias ColorMap =
 
 all : List String
 all =
-    [ "Français", "Anglais", "Écossais", "Allemand" ]
+    [ "Français"
+    , "Anglais"
+    , "Écossais"
+    , "Irlandais"
+    , "Juif"
+    ]
 
 
 colorMap : Dict String Color
