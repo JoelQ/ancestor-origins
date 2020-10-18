@@ -89,6 +89,7 @@ type Msg
     = GenerateTreeClicked
     | ReceiveNewTree FamilyTree
     | NodeSelected Int
+    | ModalCloseClicked
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -108,6 +109,9 @@ update msg model =
         NodeSelected idx ->
             ( { model | selected = FamilyTree.find idx model.tree }, Cmd.none )
 
+        ModalCloseClicked ->
+            ( { model | selected = Nothing }, Cmd.none )
+
 
 
 -- VIEW
@@ -120,6 +124,7 @@ view model =
         , legend
         , controls
         , treeView <| FamilyTree.recalculateNationalities model.tree
+        , modal model.selected
         ]
 
 
@@ -177,6 +182,21 @@ unknown id nationality =
             , Html.text <| String.fromInt id
             ]
         ]
+
+
+modal : Maybe Nationality.Distribution -> Html Msg
+modal selection =
+    case selection of
+        Nothing ->
+            Html.text ""
+
+        Just nat ->
+            Html.section [ Html.Attributes.class "modal" ]
+                [ Html.h1 [] [ Html.text "Set Nationality" ]
+                , Html.button [ Html.Attributes.class "close", Html.Events.onClick ModalCloseClicked ] [ Html.text "x" ]
+                , Html.div [ Html.Attributes.class "modal-content" ]
+                    []
+                ]
 
 
 
