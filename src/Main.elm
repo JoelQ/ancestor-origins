@@ -27,7 +27,7 @@ type alias Flags =
 
 type alias Model =
     { tree : FamilyTree
-    , selected : Maybe Nationality.Distribution
+    , selected : Maybe Int
     }
 
 
@@ -90,7 +90,7 @@ type Msg
     | ReceiveNewTree FamilyTree
     | NodeSelected Int
     | ModalCloseClicked
-    | NationalityChosen String
+    | NationalityChosen Int String
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -108,13 +108,21 @@ update msg model =
             ( { model | tree = tree }, Cmd.none )
 
         NodeSelected idx ->
-            ( { model | selected = FamilyTree.find idx model.tree }, Cmd.none )
+            ( { model | selected = Just idx }, Cmd.none )
 
         ModalCloseClicked ->
             ( { model | selected = Nothing }, Cmd.none )
 
-        NationalityChosen newNat ->
-            ( { model | selected = Nothing }, Cmd.none )
+        NationalityChosen idx newNat ->
+            ( { model
+                | selected = Nothing
+                , tree =
+                    FamilyTree.updateAt idx
+                        (FamilyTree.setNationalityOfUnknownAncestors <| Dict.fromList [ ( newNat, 1 ) ])
+                        model.tree
+              }
+            , Cmd.none
+            )
 
 
 
@@ -128,7 +136,7 @@ view model =
         , legend
         , controls
         , treeView <| FamilyTree.recalculateNationalities model.tree
-        , modal model.selected
+        , modal model.selected model.tree
         ]
 
 
@@ -188,23 +196,28 @@ unknown id nationality =
         ]
 
 
-modal : Maybe Nationality.Distribution -> Html Msg
-modal selection =
-    case selection of
+modal : Maybe Int -> FamilyTree -> Html Msg
+modal maybeIdx tree =
+    case maybeIdx of
         Nothing ->
             Html.text ""
 
-        Just nat ->
-            Html.section [ Html.Attributes.class "modal" ]
-                [ Html.h1 [] [ Html.text "Set Nationality" ]
-                , Html.button [ Html.Attributes.class "close", Html.Events.onClick ModalCloseClicked ] [ Html.text "x" ]
-                , Html.div [ Html.Attributes.class "modal-content" ]
-                    [ nationalityForm ]
-                ]
+        Just idx ->
+            case FamilyTree.find idx tree of
+                Nothing ->
+                    Html.text ""
+
+                Just nat ->
+                    Html.section [ Html.Attributes.class "modal" ]
+                        [ Html.h1 [] [ Html.text "Set Nationality" ]
+                        , Html.button [ Html.Attributes.class "close", Html.Events.onClick ModalCloseClicked ] [ Html.text "x" ]
+                        , Html.div [ Html.Attributes.class "modal-content" ]
+                            [ nationalityForm idx ]
+                        ]
 
 
-nationalityForm : Html Msg
-nationalityForm =
+nationalityForm : Int -> Html Msg
+nationalityForm idx =
     let
         colors =
             Nationality.colorMap |> Dict.toList
@@ -212,7 +225,7 @@ nationalityForm =
     Html.div [ Html.Attributes.class "nationality-form" ] <|
         List.map
             (\( nationality, color ) ->
-                chooseNationalityButton NationalityChosen nationality color
+                chooseNationalityButton (NationalityChosen idx) nationality color
             )
             colors
 

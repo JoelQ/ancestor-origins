@@ -5,6 +5,8 @@ module FamilyTree exposing
     , foldWithIndex
     , generator
     , recalculateNationalities
+    , setNationalityOfUnknownAncestors
+    , updateAt
     )
 
 import Dict
@@ -89,6 +91,33 @@ getNationality tree =
 
         Unknown nationality ->
             nationality
+
+
+setNationalityOfUnknownAncestors : Nationality.Distribution -> FamilyTree -> FamilyTree
+setNationalityOfUnknownAncestors newNat =
+    fold
+        (\nat father mother -> Node { nationality = nat, father = father, mother = mother })
+        (\_ -> Unknown newNat)
+
+
+updateAt : Int -> (FamilyTree -> FamilyTree) -> FamilyTree -> FamilyTree
+updateAt id func tree =
+    foldWithIndex
+        (\idx nat father mother ->
+            if idx == id then
+                func (Node { nationality = nat, father = father, mother = mother })
+
+            else
+                Node { nationality = nat, father = father, mother = mother }
+        )
+        (\idx nat ->
+            if idx == id then
+                func (Unknown nat)
+
+            else
+                Unknown nat
+        )
+        tree
 
 
 recalculateNationalities : FamilyTree -> FamilyTree
